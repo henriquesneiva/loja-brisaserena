@@ -15,7 +15,10 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.brisaserena.apibrisaserena.domain.Categoria;
 import com.brisaserena.apibrisaserena.domain.Produtos;
+import com.brisaserena.apibrisaserena.dto.ProdutosDTO;
+import com.brisaserena.apibrisaserena.repository.CategoriaRepository;
 import com.brisaserena.apibrisaserena.repository.ProdutosRepository;
 
 @RestController
@@ -24,14 +27,33 @@ public class ProdutosController {
 
 	@Autowired
 	private ProdutosRepository repository;
+	
+	@Autowired
+	private CategoriaRepository categoriaRepository;
 
+	
 	@PostMapping
-	public Produtos create(@RequestBody Produtos produtos) {
+	@ResponseStatus(HttpStatus.CREATED)
+	public Produtos create(@RequestBody ProdutosDTO dto) {
+		
+		Integer idCategoria = dto.getIdCategoria();
+		
+		Categoria categoria = categoriaRepository.findById(idCategoria)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,"categoria não encontrada"));
+				
+		Produtos produtos = new Produtos();
+		
+		produtos.setNome(dto.getNome());
+		produtos.setPreco(dto.getPreco());
+		produtos.setQuantidade(dto.getQuantidade());
+		produtos.setCategoria(categoria);
+		
 		return repository.save(produtos);
+		
+		
 	}
 
 	@GetMapping
-	@ResponseStatus(HttpStatus.CREATED)
 	public List<Produtos> findAll() {
 		return repository.findAll();
 	}
@@ -56,11 +78,14 @@ public class ProdutosController {
 	@PutMapping("{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void update(@PathVariable Integer id, @RequestBody Produtos produtosUpdate) {
+		
 		repository.findById(id)
 				.map(produtos -> {
 					produtosUpdate.setId(id);
 					return repository.save(produtosUpdate);
 				}).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,"produto não encontrado"));
+	
 	}
+	
 
 }
